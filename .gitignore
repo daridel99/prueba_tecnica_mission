@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+
+# Django
+*.log
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Virtualenv
+venv/
+.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (cuando agregues frontend)
+node_modules/
+dist/
+
+# Coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Migrations cache
+**/migrations/__pycache__/
+
+#Extra
+Prueba_Tecnica_Desarrollador.pdf
+*.pdf
+prueba_tecnica.zip
+*.zip
