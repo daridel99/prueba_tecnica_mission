@@ -32,19 +32,19 @@ class IndiceRiesgo(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                check=Q(indice_compuesto__gte=0) & Q(indice_compuesto__lte=100),
+                condition=Q(indice_compuesto__gte=0) & Q(indice_compuesto__lte=100),
                 name="indice_compuesto_entre_0_100"
             ),
             models.CheckConstraint(
-                check=Q(score_economico__gte=0) & Q(score_economico__lte=100),
+                condition=Q(score_economico__gte=0) & Q(score_economico__lte=100),
                 name="score_economico_entre_0_100"
             ),
             models.CheckConstraint(
-                check=Q(score_cambiario__gte=0) & Q(score_cambiario__lte=100),
+                condition=Q(score_cambiario__gte=0) & Q(score_cambiario__lte=100),
                 name="score_cambiario_entre_0_100"
             ),
             models.CheckConstraint(
-                check=Q(score_estabilidad__gte=0) & Q(score_estabilidad__lte=100),
+                condition=Q(score_estabilidad__gte=0) & Q(score_estabilidad__lte=100),
                 name="score_estabilidad_entre_0_100"
             )
         ]
