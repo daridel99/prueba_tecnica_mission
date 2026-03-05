@@ -1,6 +1,7 @@
-from django.urls import path
-from .views import calcular_riesgo
+from rest_framework.routers import DefaultRouter
+from .views import RiesgoViewSet
 
-urlpatterns = [
-    path("calcular/", calcular_riesgo),
-]
+router = DefaultRouter()
+router.register(r"", RiesgoViewSet, basename="riesgo")
+
+urlpatterns = router.urls

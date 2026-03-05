@@ -3,8 +3,7 @@ from django.core.management.base import BaseCommand
 from apps.countries.models import Pais
 from apps.indicators.models import IndicadorEconomico
 from apps.exchange.models import TipoCambio
-from datetime import date
-
+from datetime import date, datetime
 
 WORLD_BANK_BASE = "https://api.worldbank.org/v2"
 
@@ -82,13 +81,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Sincronizando tipos de cambio...")
 
-        url = "https://api.exchangerate-api.com/v4/latest/USD"
-
-        response = requests.get(url)
-
-        data = response.json()
-
-        rates = data["rates"]
+        url = "https://api.exchangerate-api.com/v4/latest/{}"
 
         monedas = {
             "CO": "COP",
@@ -106,21 +99,49 @@ class Command(BaseCommand):
         for codigo, moneda in monedas.items():
 
             pais = Pais.objects.filter(codigo_iso=codigo).first()
-
             if not pais:
                 continue
 
-            tasa = rates.get(moneda)
+            try:
+                response = requests.get(url.format(moneda))
+                data = response.json()
+            except Exception:
+                continue
+
+            rates = data.get("rates", {})
+            tasa = rates.get("USD")
 
             if not tasa:
                 continue
 
+            fecha_str = data.get("date")
+
+            if fecha_str:
+                fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+            else:
+                fecha = date.today()
+
+            ultimo = (
+                TipoCambio.objects
+                .filter(pais=pais)
+                .order_by("-fecha")[1:2]
+                .first()
+            )
+
+            print(ultimo)
+
+            variacion = None
+
+            if ultimo:
+                variacion = ((tasa - float(ultimo.tasa)) / float(ultimo.tasa)) * 100
+
             TipoCambio.objects.update_or_create(
                 pais=pais,
-                fecha=date.today(),
+                fecha=fecha,
                 defaults={
-                    "moneda_destino": moneda,
+                    "moneda_destino": "USD",
                     "tasa": tasa,
+                    "variacion_porcentual": variacion,
                     "fuente": "ExchangeRate API"
                 }
             )
