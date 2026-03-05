@@ -2,4 +2,4 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ["tudominio.com"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
