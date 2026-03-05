@@ -4,6 +4,8 @@ djangorestframework-simplejwt
 django-filter
 psycopg2-binary
 python-dotenv
-requests
+requests==2.32.3
 drf-spectacular
-requests-2.32.5
+gunicorn
+whitenoise
+dj-database-url
