@@ -38,7 +38,7 @@ htmlcov/
 **/migrations/__pycache__/
 
 #Extra
-#Prueba_Tecnica_Desarrollador.pdf
+Prueba_Tecnica_Desarrollador.pdf
 *.pdf
 prueba_tecnica.zip
 *.zip
