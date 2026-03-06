@@ -18,6 +18,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "username",
             "password",
             "nombre_completo",
+            "rol"
         ]
 
     def create(self, validated_data):
@@ -26,7 +27,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
-        user.rol = User.Roles.VIEWER
         user.save()
 
         return user
