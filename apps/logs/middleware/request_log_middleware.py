@@ -18,7 +18,8 @@ class RequestLogMiddleware:
 
         duration = round(time.time() - start_time, 3)
 
-        user = None
+        user = request.user if request.user.is_authenticated else None
+        entidad_id = user.id if user else None
 
         if request.user.is_authenticated:
             user = request.user
@@ -29,7 +30,7 @@ class RequestLogMiddleware:
                 usuario=user,
                 accion="CONSULTAR",
                 entidad=request.path,
-                entidad_id=None,
+                entidad_id=entidad_id,
                 detalle={
                     "metodo": request.method,
                     "duracion": duration,
