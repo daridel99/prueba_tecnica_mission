@@ -1,7 +1,8 @@
 from apps.indicators.models import IndicadorEconomico
 from apps.exchange.models import TipoCambio
 from apps.risk.models import IndiceRiesgo
-
+from apps.alerts.models import Alerta
+from django.utils import timezone
 
 class IRPCService:
 
@@ -56,6 +57,9 @@ class IRPCService:
 
         actual = cambios[0].tasa
         anterior = cambios[1].tasa
+
+        if anterior == 0:
+            return 50
 
         variacion = abs((actual - anterior) / anterior) * 100
 
@@ -121,20 +125,62 @@ class IRPCService:
 
         nivel = IRPCService.clasificar_riesgo(indice)
 
-        return IndiceRiesgo.objects.create(
+        # buscar indice anterior
+        indice_anterior = (
+            IndiceRiesgo.objects
+            .filter(pais=pais)
+            .order_by("-fecha_calculo")
+            .first()
+        )
+
+        # crear o actualizar indice
+        indice_obj, created = IndiceRiesgo.objects.update_or_create(
             pais=pais,
-            score_economico=score_economico,
-            score_cambiario=score_cambiario,
-            score_estabilidad=score_estabilidad,
-            indice_compuesto=indice,
-            nivel_riesgo=nivel,
-            detalle_calculo={
-                "economico": score_economico,
-                "cambiario": score_cambiario,
-                "estabilidad": score_estabilidad
+            fecha_calculo=timezone.now().date(),
+            defaults={
+                "score_economico": score_economico,
+                "score_cambiario": score_cambiario,
+                "score_estabilidad": score_estabilidad,
+                "indice_compuesto": indice,
+                "nivel_riesgo": nivel,
+                "detalle_calculo": {
+                    "economico": score_economico,
+                    "cambiario": score_cambiario,
+                    "estabilidad": score_estabilidad
+                }
             }
         )
-    
+
+        # riesgo crítico
+        if indice < 25:
+
+            Alerta.objects.create(
+                pais=pais,
+                tipo_alerta="RIESGO",
+                severidad="CRITICAL",
+                titulo="Riesgo crítico detectado",
+                mensaje=f"El IRPC de {pais.nombre} cayó a {indice:.2f}",
+                leida=False
+            )
+
+        # caída fuerte respecto al anterior
+        if indice_anterior:
+
+            diferencia = indice_anterior.indice_compuesto - indice
+
+            if diferencia > 15:
+
+                Alerta.objects.create(
+                    pais=pais,
+                    tipo_alerta="RIESGO",
+                    severidad="WARNING",
+                    titulo="Caída fuerte en el índice de riesgo",
+                    mensaje=f"{pais.nombre} cayó {diferencia:.2f} puntos en el IRPC",
+                    leida=False
+                )
+
+        return indice_obj
+
     @staticmethod
     def obtener_indicador(pais, tipo):
 
@@ -147,3 +193,23 @@ class IRPCService:
         )
 
         return indicador
+    
+    @staticmethod
+    def recalcular_todos():
+
+        from apps.countries.models import Pais
+
+        paises = Pais.objects.filter(activo=True)
+
+        resultados = []
+
+        for pais in paises:
+
+            indice = IRPCService.calcular_irpc(pais)
+
+            resultados.append({
+                "pais": pais.codigo_iso,
+                "indice": indice.indice_compuesto
+            })
+
+        return resultados

@@ -9,7 +9,7 @@ from reportlab.lib.pagesizes import letter
 from .models import Portafolio, Posicion
 from .serializers import PortafolioSerializer, PosicionSerializer
 from apps.users.permissions import IsAdminOrOwnerOrReadOnly
-
+from apps.logs.services.log_service import registrar_log
 
 class PortafolioViewSet(viewsets.ModelViewSet):
 
@@ -25,7 +25,17 @@ class PortafolioViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+
+        portafolio = serializer.save(usuario=self.request.user)
+
+        registrar_log(
+            usuario=self.request.user,
+            accion="CREAR",
+            entidad="Portafolio",
+            entidad_id=portafolio.id,
+            detalle={"nombre": portafolio.nombre},
+            request=self.request
+        )
 
     @action(detail=True, methods=["get"])
     def resumen(self, request, pk=None):
@@ -64,6 +74,15 @@ class PortafolioViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.save(portafolio=portafolio)
+
+            registrar_log(
+                usuario=request.user,
+                accion="CREAR",
+                entidad="Posicion",
+                entidad_id=serializer.instance.id,
+                detalle={"portafolio": portafolio.id},
+                request=request
+            )
 
             return Response({
                 "mensaje": "Posición creada",

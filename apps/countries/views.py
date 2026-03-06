@@ -28,9 +28,27 @@ class PaisViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="tipo-cambio")
     def tipo_cambio(self, request, codigo_iso=None):
         pais = self.get_object()
-        tipocambio = TipoCambio.objects.filter(pais=pais)
 
-        serializer = TipoCambioSerializer(tipocambio, many=True)
+        fecha_inicio = request.query_params.get("fecha_inicio")
+        fecha_fin = request.query_params.get("fecha_fin")
+
+        queryset = TipoCambio.objects.filter(pais=pais)
+
+        if fecha_inicio:
+            queryset = queryset.filter(fecha__gte=fecha_inicio)
+
+        if fecha_fin:
+            queryset = queryset.filter(fecha__lte=fecha_fin)
+
+        queryset = queryset.order_by("-fecha")
+
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = TipoCambioSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = TipoCambioSerializer(queryset, many=True)
         return Response(serializer.data)
     
     @action( detail=False, methods=["post"], url_path="sync-indicadores", permission_classes=[IsAdminUser])
