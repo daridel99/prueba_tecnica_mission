@@ -1,7 +1,6 @@
 import requests
 from django.core.management.base import BaseCommand
 from apps.countries.models import Pais
-from apps.logs.services.log_service import registrar_log
 
 
 PAISES = ["CO", "BR", "MX", "AR", "CL", "PE", "EC", "UY", "PY", "PA"]
@@ -40,14 +39,6 @@ class Command(BaseCommand):
 
                     self.stdout.write(f"Error consultando {codigo}")
 
-                    registrar_log(
-                        accion="ERROR",
-                        entidad="Pais",
-                        entidad_id=codigo,
-                        detalle={
-                            "mensaje": "Error consultando API REST Countries"
-                        }
-                    )
 
                     continue
 
@@ -87,15 +78,6 @@ class Command(BaseCommand):
 
                 accion = "CREAR" if created else "EDITAR"
 
-                registrar_log(
-                    accion=accion,
-                    entidad="Pais",
-                    entidad_id=pais.codigo_iso,
-                    detalle={
-                        "nombre": nombre,
-                        "region": region
-                    }
-                )
 
                 self.stdout.write(f"✔ Pais sincronizado: {nombre}")
 
@@ -103,13 +85,5 @@ class Command(BaseCommand):
 
                 self.stdout.write(f"X Pais NO sincronizado: {codigo}")
 
-                registrar_log(
-                    accion="ERROR",
-                    entidad="Pais",
-                    entidad_id=codigo,
-                    detalle={
-                        "error": str(e)
-                    }
-                )
 
         self.stdout.write(self.style.SUCCESS("Países sincronizados correctamente"))
