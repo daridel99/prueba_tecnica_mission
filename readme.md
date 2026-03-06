@@ -1,8 +1,19 @@
-#tree /f > estructura.txt
+## Ejecutables
 
-#git ls-files > estructura.txt
+python manage.py makemigrations
+python manage.py migrate
+python manage.py seed_users
+python manage.py runserver
+
+## Usuarios de prueba:
+
+admin@datapulse.com / DataPulse2026!
+analista@datapulse.com / DataPulse2026!
+viewer@datapulse.com / DataPulse2026!
 
 ## Estructura del Proyecto
+
+git ls-files > estructura.txt
 
 ``` text
 .
