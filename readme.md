@@ -1,6 +1,10 @@
 #tree /f > estructura.txt
 
 #git ls-files > estructura.txt
+
+## Estructura del Proyecto
+
+``` text
 .
 ├── .env.example
 ├── .gitignore
@@ -121,3 +125,4 @@
         ├── base.py
         ├── local.py
         └── production.py
+```
