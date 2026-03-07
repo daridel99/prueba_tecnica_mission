@@ -14,8 +14,9 @@ staticfiles/
 
 # Virtualenv
 venv/
+.venv/
 .env
-!.env.example
+backend/.env
 
 # IDE
 .vscode/
@@ -25,9 +26,11 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Node (cuando agregues frontend)
+# Node / Angular
 node_modules/
 dist/
+.angular/
+frontend/.env
 
 # Coverage
 htmlcov/
@@ -37,9 +40,11 @@ htmlcov/
 # Migrations cache
 **/migrations/__pycache__/
 
-#Extra
+# Extra
 Prueba_Tecnica_Desarrollador.pdf
 *.pdf
 prueba_tecnica.zip
 *.zip
 estructura.txt
+
+.claude

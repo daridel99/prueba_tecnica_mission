@@ -1,0 +1,33 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$datapulse-primary: mat.define-palette(mat.$blue-grey-palette, 800, 700, 900);
+$datapulse-accent: mat.define-palette(mat.$green-palette, A700, A400, A200);
+$datapulse-warn: mat.define-palette(mat.$red-palette);
+
+$datapulse-theme: mat.define-light-theme((
+  color: (
+    primary: $datapulse-primary,
+    accent: $datapulse-accent,
+    warn: $datapulse-warn,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+@include mat.all-component-themes($datapulse-theme);
+
+:root {
+  --risk-bajo: #22c55e;
+  --risk-moderado: #eab308;
+  --risk-alto: #f97316;
+  --risk-critico: #ef4444;
+  --primary: #1e3a5f;
+  --accent: #22c55e;
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+@import 'leaflet/dist/leaflet.css';
