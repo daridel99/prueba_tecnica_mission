@@ -52,7 +52,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def resumen(self, request, pk=None):
         portafolio = self.get_object()
-        posiciones = portafolio.posiciones.filter(fecha_salida__isnull=True).select_related("pais")
+        posiciones = list(portafolio.posiciones.filter(fecha_salida__isnull=True).select_related("pais"))
         por_pais = {}
         por_activo = {}
         total_invertido = 0
@@ -64,7 +64,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
             por_activo[activo] = por_activo.get(activo, 0) + monto
             total_invertido += monto
         return Response({
-            "total_posiciones": posiciones.count(),
+            "total_posiciones": len(posiciones),
             "total_invertido": total_invertido,
             "distribucion_pais": por_pais,
             "distribucion_tipo_activo": por_activo
@@ -73,7 +73,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def posiciones(self, request, pk=None):
         portafolio = self.get_object()
-        serializer = PosicionSerializer(data=request.data)
+        serializer = PosicionSerializer(data=request.data, context={"portafolio": portafolio})
         if serializer.is_valid():
             serializer.save(portafolio=portafolio)
             registrar_log(
@@ -89,7 +89,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
         portafolio = self.get_object()
         posicion = get_object_or_404(Posicion, id=posicion_id, portafolio=portafolio)
         if request.method == "PUT":
-            serializer = PosicionSerializer(posicion, data=request.data)
+            serializer = PosicionSerializer(posicion, data=request.data, context={"portafolio": portafolio})
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)

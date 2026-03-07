@@ -9,11 +9,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { PortafolioService } from '../../../core/services/portafolio.service';
+import { PaisService } from '../../../core/services/pais.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
+import { Pais } from '../../../core/models/pais.model';
+import { Observable, map, startWith } from 'rxjs';
 
 @Component({
   selector: 'app-portafolio-detail',
@@ -21,7 +26,8 @@ import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
   imports: [
     CommonModule, RouterLink, ReactiveFormsModule,
     MatCardModule, MatTableModule, MatButtonModule, MatIconModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatProgressSpinnerModule
+    MatFormFieldModule, MatInputModule, MatSelectModule, MatAutocompleteModule,
+    MatProgressSpinnerModule, NgxChartsModule
   ],
   template: `
     @if (loading) {
@@ -60,6 +66,39 @@ import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
           </mat-card-content>
         </mat-card>
       </div>
+
+      @if (pieData.length || donutData.length) {
+        <div class="charts-grid">
+          @if (pieData.length) {
+            <mat-card>
+              <mat-card-header><mat-card-title>Distribucion por Pais</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <ngx-charts-pie-chart
+                  [results]="pieData"
+                  [legend]="true"
+                  [labels]="true"
+                  [doughnut]="false"
+                  [view]="[350, 300]">
+                </ngx-charts-pie-chart>
+              </mat-card-content>
+            </mat-card>
+          }
+          @if (donutData.length) {
+            <mat-card>
+              <mat-card-header><mat-card-title>Distribucion por Tipo Activo</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <ngx-charts-pie-chart
+                  [results]="donutData"
+                  [legend]="true"
+                  [labels]="true"
+                  [doughnut]="true"
+                  [view]="[350, 300]">
+                </ngx-charts-pie-chart>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      }
 
       <mat-card class="section-card">
         <mat-card-header><mat-card-title>Posiciones</mat-card-title></mat-card-header>
@@ -107,8 +146,13 @@ import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
           <mat-card-content>
             <form [formGroup]="posForm" (ngSubmit)="addPosicion()" class="pos-form">
               <mat-form-field appearance="outline">
-                <mat-label>Pais (codigo ISO)</mat-label>
-                <input matInput formControlName="pais" placeholder="e.g. CO">
+                <mat-label>Pais</mat-label>
+                <input matInput formControlName="pais" [matAutocomplete]="paisAuto" placeholder="Buscar pais...">
+                <mat-autocomplete #paisAuto="matAutocomplete" [displayWith]="displayPais">
+                  @for (p of filteredPaises$ | async; track p.codigo_iso) {
+                    <mat-option [value]="p.codigo_iso">{{ p.nombre }} ({{ p.codigo_iso }})</mat-option>
+                  }
+                </mat-autocomplete>
               </mat-form-field>
 
               <mat-form-field appearance="outline">
@@ -124,16 +168,23 @@ import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
               <mat-form-field appearance="outline">
                 <mat-label>Monto USD</mat-label>
                 <input matInput formControlName="monto_inversion_usd" type="number">
+                @if (posForm.get('monto_inversion_usd')?.hasError('min')) {
+                  <mat-error>Minimo $1,000</mat-error>
+                }
+                @if (posForm.get('monto_inversion_usd')?.hasError('max')) {
+                  <mat-error>Maximo $10,000,000</mat-error>
+                }
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>Fecha Entrada</mat-label>
-                <input matInput formControlName="fecha_entrada" type="date">
+                <input matInput formControlName="fecha_entrada" type="date" [max]="today">
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>Notas</mat-label>
-                <input matInput formControlName="notas">
+                <input matInput formControlName="notas" maxlength="200">
+                <mat-hint align="end">{{ posForm.get('notas')?.value?.length || 0 }}/200</mat-hint>
               </mat-form-field>
 
               <button mat-raised-button color="primary" type="submit" [disabled]="posForm.invalid">
@@ -159,6 +210,13 @@ import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
     }
     .summary-label { color: #666; font-size: 0.9rem; }
     .summary-value { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    ngx-charts-pie-chart { display: block; margin: 0 auto; }
     .section-card { margin-bottom: 16px; }
     .full-width { width: 100%; }
     .pos-form {
@@ -173,6 +231,7 @@ import { Portafolio, Posicion } from '../../../core/models/portafolio.model';
 export class PortafolioDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private portafolioService = inject(PortafolioService);
+  private paisService = inject(PaisService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
   private snackBar = inject(MatSnackBar);
@@ -182,28 +241,67 @@ export class PortafolioDetailComponent implements OnInit {
   canEdit = false;
   totalInvertido = 0;
   posColumns = ['pais', 'tipo_activo', 'monto', 'fecha_entrada', 'acciones'];
+  pieData: any[] = [];
+  donutData: any[] = [];
+  paises: Pais[] = [];
+  filteredPaises$!: Observable<Pais[]>;
+  today = new Date().toISOString().split('T')[0];
 
   posForm = this.fb.group({
     pais: ['', Validators.required],
     tipo_activo: ['RENTA_FIJA', Validators.required],
-    monto_inversion_usd: [0, [Validators.required, Validators.min(0.01)]],
+    monto_inversion_usd: [null as number | null, [Validators.required, Validators.min(1000), Validators.max(10000000)]],
     fecha_entrada: ['', Validators.required],
-    notas: ['']
+    notas: ['', Validators.maxLength(200)]
   });
 
   ngOnInit(): void {
     const role = this.authService.getUserRole();
     this.canEdit = role === 'ADMIN' || role === 'ANALISTA';
     this.loadData();
+
+    this.paisService.getAll().subscribe(data => {
+      this.paises = data.results || [];
+      this.filteredPaises$ = this.posForm.get('pais')!.valueChanges.pipe(
+        startWith(''),
+        map(value => this.filterPaises(value || ''))
+      );
+    });
   }
+
+  private filterPaises(value: string): Pais[] {
+    const filterValue = value.toLowerCase();
+    return this.paises.filter(p =>
+      p.nombre.toLowerCase().includes(filterValue) ||
+      p.codigo_iso.toLowerCase().includes(filterValue)
+    );
+  }
+
+  displayPais = (codigo: string): string => {
+    const found = this.paises.find(p => p.codigo_iso === codigo);
+    return found ? `${found.nombre} (${found.codigo_iso})` : codigo;
+  };
 
   loadData(): void {
     const id = +this.route.snapshot.paramMap.get('id')!;
     this.portafolioService.getById(id).subscribe(data => {
       this.portafolio = data;
-      this.totalInvertido = (data.posiciones || []).reduce((sum, p) => sum + p.monto_inversion_usd, 0);
+      const posiciones = data.posiciones || [];
+      this.totalInvertido = posiciones.reduce((sum, p) => sum + p.monto_inversion_usd, 0);
+      this.buildCharts(posiciones);
       this.loading = false;
     });
+  }
+
+  private buildCharts(posiciones: Posicion[]): void {
+    const byPais: Record<string, number> = {};
+    const byTipo: Record<string, number> = {};
+    for (const p of posiciones) {
+      byPais[p.pais] = (byPais[p.pais] || 0) + p.monto_inversion_usd;
+      byTipo[p.tipo_activo] = (byTipo[p.tipo_activo] || 0) + p.monto_inversion_usd;
+    }
+    this.pieData = Object.entries(byPais).map(([name, value]) => ({ name, value }));
+    this.donutData = Object.entries(byTipo).map(([name, value]) => ({ name, value }));
   }
 
   addPosicion(): void {
@@ -213,6 +311,10 @@ export class PortafolioDetailComponent implements OnInit {
         this.snackBar.open('Posicion agregada', 'OK', { duration: 3000 });
         this.posForm.reset({ tipo_activo: 'RENTA_FIJA' });
         this.loadData();
+      },
+      error: (err) => {
+        const msg = err.error?.detail || err.error?.non_field_errors?.[0] || 'Error al agregar posicion';
+        this.snackBar.open(msg, 'Cerrar', { duration: 5000 });
       }
     });
   }

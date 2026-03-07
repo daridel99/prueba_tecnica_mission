@@ -31,6 +31,10 @@ class IndiceRiesgo(models.Model):
 
     class Meta:
         constraints = [
+            models.UniqueConstraint(
+                fields=["pais", "fecha_calculo"],
+                name="unique_riesgo_pais_fecha"
+            ),
             models.CheckConstraint(
                 condition=Q(indice_compuesto__gte=0) & Q(indice_compuesto__lte=100),
                 name="indice_compuesto_entre_0_100"

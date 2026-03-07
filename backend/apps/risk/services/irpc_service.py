@@ -132,8 +132,13 @@ class IRPCService:
         indice = IRPCService.calcular_indice_compuesto(score_economico, score_cambiario, score_estabilidad)
         nivel = IRPCService.clasificar_riesgo(indice)
         indice_anterior = IndiceRiesgo.objects.filter(pais=pais).order_by("-fecha_calculo").first()
+        today = timezone.now().date()
+        # Remove duplicates if any exist for today
+        existing_today = IndiceRiesgo.objects.filter(pais=pais, fecha_calculo=today)
+        if existing_today.count() > 1:
+            existing_today.exclude(pk=existing_today.first().pk).delete()
         indice_obj, created = IndiceRiesgo.objects.update_or_create(
-            pais=pais, fecha_calculo=timezone.now().date(),
+            pais=pais, fecha_calculo=today,
             defaults={
                 "score_economico": score_economico, "score_cambiario": score_cambiario,
                 "score_estabilidad": score_estabilidad, "indice_compuesto": indice,

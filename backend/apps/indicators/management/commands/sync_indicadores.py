@@ -55,6 +55,12 @@ class Command(BaseCommand):
                     )
         self.stdout.write("Indicadores economicos sincronizados")
         self.sync_exchange()
+        Alerta.objects.create(
+            pais=None, tipo_alerta=Alerta.TipoAlerta.SISTEMA, severidad=Alerta.Severidad.INFO,
+            titulo="Sincronizacion de datos completada",
+            mensaje=f"Se actualizaron indicadores economicos y tipos de cambio para {len(PAISES)} paises.",
+            leida=False
+        )
 
     def sync_exchange(self):
         self.stdout.write("Sincronizando tipos de cambio...")
@@ -95,7 +101,7 @@ class Command(BaseCommand):
             )
             if variacion is not None and abs(variacion) > 3:
                 Alerta.objects.create(
-                    pais=pais, tipo_alerta="TIPO_CAMBIO", severidad="WARNING",
+                    pais=pais, tipo_alerta=Alerta.TipoAlerta.TIPO_CAMBIO, severidad=Alerta.Severidad.WARNING,
                     titulo=f"Variacion tipo de cambio > 3% en {pais.nombre}",
                     mensaje=f"El tipo de cambio de {pais.moneda_codigo}/USD vario {variacion:.2f}% en un dia.",
                     leida=False

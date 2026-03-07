@@ -97,28 +97,72 @@ El IRPC evalua el riesgo de inversion en cada pais usando 3 dimensiones:
 
 ## Decisiones Tecnicas
 
-- **JWT (SimpleJWT)**: Autenticacion stateless con access/refresh tokens
-- **Roles**: ADMIN (staff+superuser), ANALISTA (CRUD portafolios), VIEWER (solo lectura)
+| Tecnologia | Justificacion |
+|------------|---------------|
+| **Django 5.2 + DRF** | Framework robusto para APIs REST, ORM potente, sistema de migraciones |
+| **SimpleJWT** | Autenticacion stateless con access/refresh tokens, rotacion automatica |
+| **PostgreSQL** | BD relacional robusta, soporte JSON, ideal para datos financieros |
+| **Angular 17 Standalone** | Sin NgModules, lazy loading nativo, signals, mejor tree-shaking |
+| **Angular Material** | Componentes UI accesibles y consistentes (Material Design) |
+| **ngx-charts** | Graficos SVG reactivos (lineas, pie, donut) integrados con Angular |
+| **Leaflet** | Mapa interactivo ligero para visualizacion geografica de riesgo |
+| **drf-spectacular** | Documentacion OpenAPI 3.0 auto-generada desde ViewSets |
+| **Docker + Nginx** | Contenedores reproducibles, Nginx como reverse proxy y SPA server |
+| **GitHub Actions** | CI/CD integrado: tests backend, build frontend, deploy a Render |
+
+**Decisiones de diseno:**
 - **Soft Delete**: Portafolios usan `activo=False` en lugar de eliminacion fisica
 - **IRPC por penalizacion**: Parte de 100 y resta segun umbrales (mas intuitivo que suma)
 - **N+1 optimizado**: Dashboard usa `Subquery` + `annotate` en lugar de queries por pais
 - **Alertas globales**: `usuario=null` para alertas del sistema visibles a todos
-- **Angular standalone**: Sin NgModules, lazy loading por rutas
+- **Roles**: ADMIN (staff+superuser), ANALISTA (CRUD portafolios), VIEWER (solo lectura)
+
+## Manejo de Errores
+
+**Backend:**
+- Custom exception handler en DRF: respuestas JSON con `detail`, `code`, `status_code`
+- Middleware `RequestLogMiddleware`: registra cada request en `LogActividad` (metodo, path, usuario, duracion)
+- Python `logging` configurado con niveles INFO/ERROR
+- Validaciones cruzadas en serializers (monto min/max, fecha no futura, total portafolio <= $50M)
+
+**Frontend:**
+- `jwtInterceptor`: Agrega Bearer token, refresh automatico en respuesta 401
+- `errorInterceptor`: Snackbar con mensajes de error segun codigo HTTP
+- `loadingInterceptor`: Indicador de carga global via `LoadingService` (BehaviorSubject)
+- Manejo de error de conexion (status 0) con mensaje al usuario
+
+**Alertas automaticas:**
+- Variacion tipo de cambio > 3% → alerta WARNING
+- IRPC < 25 (riesgo critico) → alerta CRITICAL
+- Caida IRPC > 15 puntos → alerta WARNING
+- Hiperinflacion > 50% → alerta CRITICAL
+- Post-sincronizacion → alerta INFO
 
 ## Instalacion
 
 ### Con Docker (recomendado)
 
 ```bash
-git clone <repo-url>
+# 1. Clonar repositorio
+git clone https://github.com/daridel99/prueba_tecnica_mission.git
 cd prueba_tecnica_mission
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Editar .env con SECRET_KEY, DATABASE_URL y CORS_ALLOWED_ORIGINS
+
+# 3. Levantar servicios
 docker-compose up --build
 ```
 
+El `docker-compose.yml` incluye:
+- **backend**: Django + Gunicorn (puerto 8000), ejecuta migraciones + seed_data al iniciar
+- **frontend**: Angular build + Nginx (puerto 80)
+
+URLs locales:
 - Frontend: http://localhost
 - Backend API: http://localhost:8000/api/
 - Swagger: http://localhost:8000/api/docs/
-- Admin: http://localhost:8000/admin/
 
 ### Manual
 

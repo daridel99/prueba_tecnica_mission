@@ -8,10 +8,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subject, interval, filter, takeUntil, startWith } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { AlertaService } from './core/services/alerta.service';
+import { LoadingService } from './core/services/loading.service';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +21,7 @@ import { AlertaService } from './core/services/alerta.service';
   imports: [
     CommonModule, RouterOutlet, RouterLink, RouterLinkActive,
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule,
-    MatListModule, MatBadgeModule, MatMenuModule
+    MatListModule, MatBadgeModule, MatMenuModule, MatProgressBarModule
   ],
   template: `
     @if (isAuthRoute) {
@@ -79,6 +81,10 @@ import { AlertaService } from './core/services/alerta.service';
             }
           </mat-toolbar>
 
+          @if (loadingService.loading$ | async) {
+            <mat-progress-bar mode="indeterminate" class="global-loading"></mat-progress-bar>
+          }
+
           <main class="app-content">
             <router-outlet />
           </main>
@@ -125,6 +131,13 @@ import { AlertaService } from './core/services/alerta.service';
     .spacer {
       flex: 1;
     }
+    .global-loading {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      z-index: 101;
+    }
     .app-content {
       padding: 24px;
       max-width: 1400px;
@@ -139,6 +152,7 @@ import { AlertaService } from './core/services/alerta.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
+  loadingService = inject(LoadingService);
   private alertaService = inject(AlertaService);
   private router = inject(Router);
   private breakpointObserver = inject(BreakpointObserver);

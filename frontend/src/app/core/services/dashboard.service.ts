@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { DashboardResumen, MapaPais, Tendencia } from '../models/dashboard.model';
@@ -17,7 +17,10 @@ export class DashboardService {
     return this.http.get<MapaPais[]>(`${this.apiUrl}/mapa/`);
   }
 
-  getTendencias(): Observable<Tendencia[]> {
-    return this.http.get<Tendencia[]>(`${this.apiUrl}/tendencias/`);
+  getTendencias(tipo?: string, pais?: string): Observable<Tendencia[]> {
+    let params = new HttpParams();
+    if (tipo) params = params.set('tipo', tipo);
+    if (pais) params = params.set('pais', pais);
+    return this.http.get<Tendencia[]>(`${this.apiUrl}/tendencias/`, { params });
   }
 }

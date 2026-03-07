@@ -1,11 +1,15 @@
 import { Component, inject, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { RiesgoService } from '../../core/services/riesgo.service';
 import { DashboardResumen, MapaPais } from '../../core/models/dashboard.model';
@@ -16,8 +20,10 @@ import * as L from 'leaflet';
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, RouterLink, MatCardModule, MatTableModule,
-    MatChipsModule, MatIconModule, MatProgressSpinnerModule
+    CommonModule, RouterLink, ReactiveFormsModule,
+    MatCardModule, MatTableModule, MatChipsModule, MatIconModule,
+    MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule,
+    NgxChartsModule
   ],
   template: `
     <h2>Dashboard</h2>
@@ -90,6 +96,43 @@ import * as L from 'leaflet';
           </mat-card-content>
         </mat-card>
       </div>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Tendencias de Indicadores</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-filters">
+            <mat-form-field appearance="outline">
+              <mat-label>Indicador</mat-label>
+              <mat-select [formControl]="tipoControl" (selectionChange)="loadTendencias()">
+                <mat-option value="PIB">PIB</mat-option>
+                <mat-option value="INFLACION">Inflacion</mat-option>
+                <mat-option value="DESEMPLEO">Desempleo</mat-option>
+                <mat-option value="PIB_PERCAPITA">PIB Per Capita</mat-option>
+                <mat-option value="DEUDA_PIB">Deuda/PIB</mat-option>
+                <mat-option value="BALANZA_COMERCIAL">Balanza Comercial</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          @if (chartData.length) {
+            <ngx-charts-line-chart
+              [results]="chartData"
+              [xAxis]="true"
+              [yAxis]="true"
+              [showXAxisLabel]="true"
+              [showYAxisLabel]="true"
+              [xAxisLabel]="'Anio'"
+              [yAxisLabel]="tipoControl.value || 'Valor'"
+              [legend]="true"
+              [autoScale]="true"
+              [view]="[700, 350]">
+            </ngx-charts-line-chart>
+          } @else {
+            <p class="no-data">No hay datos de tendencias disponibles</p>
+          }
+        </mat-card-content>
+      </mat-card>
     }
   `,
   styles: [`
@@ -113,6 +156,7 @@ import * as L from 'leaflet';
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
+      margin-bottom: 16px;
     }
     @media (max-width: 960px) {
       .dashboard-grid { grid-template-columns: 1fr; }
@@ -128,6 +172,10 @@ import * as L from 'leaflet';
     }
     a { color: #1e3a5f; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .chart-card { margin-bottom: 16px; }
+    .chart-filters { margin-bottom: 16px; }
+    .no-data { text-align: center; color: #999; padding: 24px; }
+    ngx-charts-line-chart { display: block; margin: 0 auto; }
   `]
 })
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -140,6 +188,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   mapData: MapaPais[] = [];
   riesgos: IndiceRiesgo[] = [];
   loading = true;
+  chartData: any[] = [];
+  tipoControl = new FormControl('INFLACION');
   private map: L.Map | null = null;
 
   ngOnInit(): void {
@@ -156,6 +206,24 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.riesgos = (Array.isArray(data) ? data : data.results || []).sort((a, b) => b.indice - a.indice);
       this.loading = false;
     });
+
+    this.loadTendencias();
+  }
+
+  loadTendencias(): void {
+    this.dashboardService.getTendencias(this.tipoControl.value || 'INFLACION').subscribe(data => {
+      this.chartData = this.transformTendencias(data);
+    });
+  }
+
+  private transformTendencias(data: any[]): any[] {
+    const grouped: Record<string, { name: string; value: number }[]> = {};
+    for (const item of data) {
+      const key = item.pais;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push({ name: String(item.anio), value: item.valor });
+    }
+    return Object.entries(grouped).map(([name, series]) => ({ name, series }));
   }
 
   ngAfterViewInit(): void {

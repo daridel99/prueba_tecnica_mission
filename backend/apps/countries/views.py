@@ -60,4 +60,5 @@ class PaisViewSet(viewsets.ModelViewSet):
     def sync_indicadores(self, request):
         call_command("sync_paises")
         call_command("sync_indicadores")
+        call_command("recalcular_riesgo")
         return Response({"mensaje": "Sincronizacion de indicadores Finalizados"})

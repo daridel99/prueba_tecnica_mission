@@ -9,6 +9,7 @@ class Alerta(models.Model):
         RIESGO = "RIESGO"
         TIPO_CAMBIO = "TIPO_CAMBIO"
         INDICADOR = "INDICADOR"
+        SISTEMA = "SISTEMA"
 
     class Severidad(models.TextChoices):
         INFO = "INFO"
@@ -21,7 +22,7 @@ class Alerta(models.Model):
         null=True,
         blank=True
     )
-    pais = models.ForeignKey(Pais, on_delete=models.CASCADE)
+    pais = models.ForeignKey(Pais, on_delete=models.CASCADE, null=True, blank=True)
     tipo_alerta = models.CharField(max_length=20, choices=TipoAlerta.choices)
     severidad = models.CharField(max_length=20, choices=Severidad.choices)
     titulo = models.CharField(max_length=200)
