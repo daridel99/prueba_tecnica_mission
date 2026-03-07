@@ -1,15 +1,31 @@
 ## Ejecutables
 
-python manage.py makemigrations
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con SECRET_KEY y DATABASE_URL
+
+
+python manage.py makemigrations 
 python manage.py migrate
 python manage.py seed_users
 python manage.py runserver
 
+
 ## Usuarios de prueba:
 
-admin@datapulse.com / DataPulse2026!
-analista@datapulse.com / DataPulse2026!
-viewer@datapulse.com / DataPulse2026!
+| Rol | Email | Password |
+|-----|-------|----------|
+| Admin | admin@datapulse.com | DataPulse2026! |
+| Analista | analista@datapulse.com | DataPulse2026! |
+| Viewer | viewer@datapulse.com | DataPulse2026! |
+
 
 ## Estructura del Proyecto
 
@@ -136,4 +152,52 @@ git ls-files > estructura.txt
         ├── base.py
         ├── local.py
         └── production.py
+```
+
+## Diagrama ER
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   Usuario   │     │      Pais        │     │  IndiceRiesgo    │
+│─────────────│     │──────────────────│     │──────────────────│
+│ email       │     │ codigo_iso (PK)  │────>│ pais_id (FK)     │
+│ username    │     │ nombre           │     │ score_economico  │
+│ rol (ADMIN/ │     │ moneda_codigo    │     │ score_cambiario  │
+│  ANALISTA/  │     │ region           │     │ score_estabilidad│
+│  VIEWER)    │     │ latitud/longitud │     │ indice_compuesto │
+│ is_staff    │     │ poblacion        │     │ clasificacion    │
+└──────┬──────┘     │ activo           │     │ fecha_calculo    │
+       │            └────────┬─────────┘     └──────────────────┘
+       │                     │
+       │            ┌────────┴─────────┐
+       │            │                  │
+       │     ┌──────┴──────┐   ┌──────┴──────────┐
+       │     │ Indicador   │   │  TipoCambio     │
+       │     │ Economico   │   │─────────────────│
+       │     │─────────────│   │ pais_id (FK)    │
+       │     │ pais_id(FK) │   │ fecha           │
+       │     │ tipo        │   │ tasa            │
+       │     │ anio        │   │ variacion_%     │
+       │     │ valor       │   └─────────────────┘
+       │     └─────────────┘
+       │
+  ┌────┴────────┐      ┌─────────────┐
+  │ Portafolio  │      │  Posicion   │
+  │─────────────│      │─────────────│
+  │ usuario(FK) │──┐   │ portafolio  │
+  │ nombre      │  └──>│ pais (FK)   │
+  │ descripcion │      │ tipo_activo │
+  │ es_publico  │      │ monto_usd   │
+  │ activo      │      │ fecha_entrada│
+  └─────────────┘      └─────────────┘
+
+  ┌─────────────┐
+  │   Alerta    │
+  │─────────────│
+  │ usuario(FK) │  (nullable = alerta global)
+  │ tipo        │
+  │ severidad   │
+  │ mensaje     │
+  │ leida       │
+  └─────────────┘
 ```
