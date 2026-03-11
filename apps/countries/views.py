@@ -10,12 +10,37 @@ from apps.exchange.models import TipoCambio
 from apps.exchange.serializers import TipoCambioSerializer
 from django.core.management import call_command
 from rest_framework.permissions import IsAdminUser
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 class PaisViewSet(viewsets.ModelViewSet):
     queryset = Pais.objects.all()
     serializer_class = PaisSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = "codigo_iso"
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+
+    filterset_fields = [
+            "region"
+        ]
+
+    search_fields = [
+        "nombre",
+        "codigo_iso",
+        "moneda_codigo",
+        "moneda_nombre"
+    ]
+
+    ordering_fields = [
+        "nombre",
+        "poblacion",
+        "region"
+    ]
 
     @action(detail=True, methods=["get"])
     def indicadores(self, request, codigo_iso=None):
