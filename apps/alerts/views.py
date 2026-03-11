@@ -1,14 +1,25 @@
-from rest_framework import viewsets
+from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Alerta
 from .serializers import AlertaSerializer
 from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
 
 class AlertaViewSet(viewsets.ModelViewSet):
 
     serializer_class = AlertaSerializer
 
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+
+    search_fields = [
+        "tipo_alerta"
+    ]
+    
     def get_queryset(self):
         user = self.request.user
         return Alerta.objects.filter(Q(usuario=user) | Q(usuario__isnull=True))
